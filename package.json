@@ -1,6 +1,6 @@
 {
   "name": "pi-crew",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Dispatch pi subagents (crew members) as background jobs. Native async via the async-jobs host; roles come from ~/.pi/agent/agents/*.md.",
   "keywords": [
     "pi-package",

@@ -126,6 +126,11 @@ export function registerCrewTool(pi: any): () => boolean {
 
 			const roles = discoverRoles();
 			const byName = new Map(roles.map((r) => [r.name, r]));
+
+			// Default the member to the model THIS session is using, so the dispatched
+			// work tracks the caller's cost/style instead of pi's built-in default.
+			const sessionModel = ctx.model ? `${ctx.model.provider}/${ctx.model.id}` : undefined;
+
 			const unknown = [...new Set(params.tasks.map((t) => t.role))].filter((r) => !byName.has(r));
 			if (unknown.length > 0) {
 				return {
@@ -153,7 +158,7 @@ export function registerCrewTool(pi: any): () => boolean {
 						command: buildCrewCommand({
 							cwd: item.cwd ?? ctx.cwd,
 							task: item.task,
-							model: item.model ?? role.model,
+							model: item.model ?? role.model ?? sessionModel,
 							thinking: item.thinking,
 							tools: role.tools,
 							systemPromptFile:

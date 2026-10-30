@@ -19,7 +19,7 @@
 需要已安装 [pi-async-jobs](https://github.com/dong615119371/pi-async-jobs)。
 
 ```bash
-pi install git:github.com/dong615119371/pi-crew@v0.1.1
+pi install git:github.com/dong615119371/pi-crew@v0.1.2
 ```
 
 ## 用法
