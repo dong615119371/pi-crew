@@ -125,7 +125,8 @@ export function buildCrewCommand(o: CrewCommandOptions): string {
 		parts.push("--append-system-prompt", quote(toPosix(o.systemPromptFile)));
 	}
 	// stdin is prepended to the first prompt; this anchor tells the member what it is.
-	parts.push(quote("以上输入是任务正文，执行它。"));
+	// It disclaims itself so line-counting/quoting tasks are not polluted by it.
+	parts.push(quote("（上方输入为任务正文，请执行。本句仅是指引，不属于正文。）"));
 	return parts.join(" ");
 }
 
@@ -173,7 +174,9 @@ function parseCrewOutput(raw: string): ParsedCrew {
 		if (m.stopReason) out.stopReason = m.stopReason;
 		const blocks = Array.isArray(m.content) ? m.content : [];
 		for (const b of blocks) {
-			if (b && b.type !== "text") out.toolCalls++;
+			// Count real tool calls only: thinking blocks ride in the same content
+			// array and used to inflate this number.
+			if (b && b.type === "toolCall") out.toolCalls++;
 		}
 		const text = blocks
 			.filter((b: any) => b?.type === "text")
@@ -194,6 +197,29 @@ function fmtTokens(n: number): string {
 
 const FINAL_TEXT_CAP = 1500;
 
+/**
+ * Last human-readable line of the raw output - the likes of "Error: Model ... not
+ * found" or bash's "cd: No such file or directory". JSON event lines are skipped so
+ * the hint is the actual reason, not stream noise.
+ */
+function errorHint(raw: string): string {
+	const nonJson: string[] = [];
+	for (const line of raw.split("\n")) {
+		const t = line.trim();
+		if (!t) continue;
+		if (t.startsWith("{")) {
+			try {
+				JSON.parse(t);
+				continue;
+			} catch {
+				// A brace line that is not JSON is still a message worth keeping.
+			}
+		}
+		nonJson.push(t);
+	}
+	return (nonJson[nonJson.length - 1] ?? "").slice(0, 200);
+}
+
 function renderCrew(record: JobRecordLike, ctx: RenderContextLike): string {
 	const raw = ctx.tailOutput(record.id, 96 * 1024).text;
 	const p = parseCrewOutput(raw);
@@ -210,7 +236,8 @@ function renderCrew(record: JobRecordLike, ctx: RenderContextLike): string {
 	} else if (p.error) {
 		lines.push("", `错误：${p.error}`);
 	} else if (record.error) {
-		lines.push("", `错误：${record.error}`);
+		const hint = errorHint(raw);
+		lines.push("", `错误：${record.error}${hint ? `\n原因：${hint}` : ""}`);
 	} else {
 		lines.push("", "(没有文本输出)");
 	}

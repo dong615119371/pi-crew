@@ -77,7 +77,14 @@ function loadRolesFromDir(dir: string): AgentConfig[] {
 			continue;
 		}
 
-		const { frontmatter, body } = parseFrontmatter<RoleFrontmatter>(content);
+		let parsed: { frontmatter: RoleFrontmatter; body: string };
+		try {
+			parsed = parseFrontmatter<RoleFrontmatter>(content);
+		} catch {
+			// Malformed YAML must not take down the other roles in the directory.
+			continue;
+		}
+		const { frontmatter, body } = parsed;
 
 		if (typeof frontmatter.name !== "string" || typeof frontmatter.description !== "string") {
 			continue;

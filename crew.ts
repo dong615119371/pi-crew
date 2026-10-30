@@ -103,6 +103,15 @@ export function registerCrewTool(pi: any): () => boolean {
 					details: undefined,
 				};
 			}
+			const emptyRoles = [...new Set(params.tasks.filter((t) => !t.task.trim()).map((t) => t.role))];
+			if (emptyRoles.length > 0) {
+				return {
+					content: [
+						{ type: "text", text: `Empty task text for role(s): ${emptyRoles.join(", ")}. Write the task body.` },
+					],
+					details: undefined,
+				};
+			}
 
 			// The renderer has to be registered before the first job it will render settles.
 			ensureChannel();
@@ -130,6 +139,12 @@ export function registerCrewTool(pi: any): () => boolean {
 				};
 			}
 
+			const requested = params.timeoutSeconds;
+			const timeoutSeconds =
+				requested != null && Number.isFinite(requested)
+					? Math.max(1, Math.floor(requested))
+					: CREW_TIMEOUT_SECONDS;
+
 			const started: Array<{ id: string; role: string; task: string }> = [];
 			for (const item of params.tasks) {
 				const role = byName.get(item.role)!;
@@ -147,7 +162,7 @@ export function registerCrewTool(pi: any): () => boolean {
 						name: `crew:${role.name}: ${preview(item.task, 60)}`,
 						kind: "crew",
 						channel: "crew",
-						timeoutSeconds: params.timeoutSeconds ?? CREW_TIMEOUT_SECONDS,
+						timeoutSeconds,
 					});
 					started.push({ id: handle.id, role: role.name, task: item.task });
 				} catch (error) {
