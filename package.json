@@ -1,0 +1,46 @@
+{
+  "name": "pi-crew",
+  "version": "0.1.0",
+  "description": "Dispatch pi subagents (crew members) as background jobs. Native async via the async-jobs host; roles come from ~/.pi/agent/agents/*.md.",
+  "keywords": [
+    "pi-package",
+    "pi",
+    "subagent",
+    "crew",
+    "async",
+    "delegate"
+  ],
+  "license": "MIT",
+  "author": "白遇冬夏",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "skills": [
+      "./skills"
+    ]
+  },
+  "files": [
+    "index.ts",
+    "crew.ts",
+    "channel.ts",
+    "consumer.ts",
+    "agents.ts",
+    "skills/**/*.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*",
+    "@earendil-works/pi-tui": "*",
+    "typebox": "*"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dong615119371/pi-crew.git"
+  },
+  "homepage": "https://github.com/dong615119371/pi-crew#readme"
+}
