@@ -189,6 +189,32 @@ function parseCrewOutput(raw: string): ParsedCrew {
 	return out;
 }
 
+const TAIL_START_BYTES = 96 * 1024;
+const TAIL_MAX_BYTES = 8 * 1024 * 1024;
+
+/**
+ * Parse the output file from the end, widening the window until the final
+ * assistant message becomes visible.
+ *
+ * A fixed window is not enough: pi closes the stream with one `agent_end`
+ * line holding the whole conversation, so the last `message_end` can sit
+ * hundreds of kilobytes before EOF. The tail always ends at EOF, so the
+ * first assistant message parsed from it is also the last one.
+ */
+function parseCrewTail(record: JobRecordLike, ctx: RenderContextLike): { parsed: ParsedCrew; raw: string } {
+	// Only a completed job has a final answer worth chasing. Failed and killed
+	// jobs must keep falling through to record.error instead of surfacing
+	// whatever partial assistant text happens to sit before the end.
+	const maxBytes = record.state === "done" && !record.error ? TAIL_MAX_BYTES : TAIL_START_BYTES;
+	let want = TAIL_START_BYTES;
+	for (;;) {
+		const { text, totalBytes } = ctx.tailOutput(record.id, want);
+		const parsed = parseCrewOutput(text);
+		if (parsed.finalText || want >= totalBytes || want >= maxBytes) return { parsed, raw: text };
+		want = Math.min(want * 4, maxBytes);
+	}
+}
+
 function fmtTokens(n: number): string {
 	if (n < 1000) return n.toString();
 	if (n < 1_000_000) return `${(n / 1000).toFixed(1)}k`;
@@ -221,8 +247,7 @@ function errorHint(raw: string): string {
 }
 
 function renderCrew(record: JobRecordLike, ctx: RenderContextLike): string {
-	const raw = ctx.tailOutput(record.id, 96 * 1024).text;
-	const p = parseCrewOutput(raw);
+	const { parsed: p, raw } = parseCrewTail(record, ctx);
 	const label = (record.name ?? "crew").replace(/^crew:\s*/, "");
 
 	const lines: string[] = [];
