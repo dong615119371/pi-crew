@@ -172,13 +172,14 @@ export function registerCrewTool(pi: any): () => boolean {
 					started.push({ id: handle.id, role: role.name, task: item.task });
 				} catch (error) {
 					return {
+						isError: true,
 						content: [
 							{
 								type: "text",
-								text: `Started ${started.length} job(s), then failed: ${error instanceof Error ? error.message : String(error)}`,
+								text: `Started ${started.length} job(s), then failed on item ${started.length + 1}: ${error instanceof Error ? error.message : String(error)}`,
 							},
 						],
-						details: { jobs: started },
+						details: { jobs: started, failedAt: started.length, error: error instanceof Error ? error.message : String(error) },
 					};
 				}
 			}

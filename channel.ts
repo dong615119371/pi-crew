@@ -48,7 +48,7 @@ export function encodeText(text: string): string {
  */
 export function writePersonaFile(roleName: string, body: string): string {
 	const safe = roleName.replace(/[^\w.-]+/g, "_");
-	const filePath = path.join(os.tmpdir(), `pi-crew-persona-${safe}.md`);
+	const filePath = path.join(os.tmpdir(), `pi-crew-persona-${safe}-${process.pid}.md`);
 	fs.writeFileSync(filePath, body, { encoding: "utf-8", mode: 0o600 });
 	return filePath;
 }
